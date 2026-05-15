@@ -310,4 +310,14 @@ public void testSetAlgorithmMethods() {
 	String[] testKexAlgos = {"diffie-hellman-group1-sha1"}; // Basic DH group
 	connection.setKeyExchangeAlgorithms(testKexAlgos);
 }
+
+@Test
+public void testGetBannersReturnsEmptyBeforeAuthentication() {
+	// Before any authentication attempt, AuthenticationManager has not been created
+	// yet, so the accessor must return an empty list rather than throwing or
+	// returning null.
+	assertNotNull(connection.getBanners(), "getBanners() must never return null");
+	assertTrue(connection.getBanners().isEmpty(),
+			"getBanners() must be empty before authentication");
+}
 }

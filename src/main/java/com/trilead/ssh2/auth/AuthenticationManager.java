@@ -54,7 +54,7 @@ public class AuthenticationManager implements MessageHandler
 	List<byte[]> packets = new ArrayList<>();
 	boolean connectionClosed = false;
 
-	String banner;
+	List<String> banners = new ArrayList<>();
 
 	String[] remainingMethods = new String[0];
 	boolean isPartialSuccess = false;
@@ -114,7 +114,33 @@ public class AuthenticationManager implements MessageHandler
 
 			PacketUserauthBanner sb = new PacketUserauthBanner(msg, 0, msg.length);
 
-			banner = sb.getBanner();
+			synchronized (banners)
+			{
+				banners.add(sb.getBanner());
+			}
+		}
+	}
+
+	/**
+	 * Returns the {@code SSH_MSG_USERAUTH_BANNER} messages sent by the server.
+	 * The server may send banners at any point before authentication completes
+	 * (typically used to display login notices or, in the case of Tailscale SSH,
+	 * a web URL the user must visit to finish authenticating).
+	 * <p>
+	 * Returns a defensive snapshot, so the caller is free to iterate without
+	 * holding any locks. Synchronizes only on the {@code banners} list itself,
+	 * NOT on the {@code AuthenticationManager} or {@code Connection} monitor,
+	 * so it remains callable from another thread while a blocking
+	 * {@code authenticateWith*} call is in progress.
+	 *
+	 * @return list of banner strings in the order received, never {@code null};
+	 *         empty if the server has not sent any.
+	 */
+	public List<String> getBanners()
+	{
+		synchronized (banners)
+		{
+			return new ArrayList<>(banners);
 		}
 	}
 

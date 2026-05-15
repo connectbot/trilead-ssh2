@@ -9,6 +9,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.security.KeyPair;
 import java.security.SecureRandom;
+import java.util.Collections;
+import java.util.List;
 import java.util.Vector;
 
 import com.trilead.ssh2.auth.AuthenticationManager;
@@ -493,6 +495,37 @@ public class Connection implements AutoCloseable
 		{
 			throw new IllegalArgumentException("user argument is null");
 		}
+	}
+
+	/**
+	 * Returns the {@code SSH_MSG_USERAUTH_BANNER} messages sent by the server.
+	 * <p>
+	 * The server may send banners at any time before authentication completes
+	 * (typically used to display login notices or, in the case of Tailscale SSH,
+	 * a web URL the user must visit to finish authenticating). Banners received
+	 * during a blocking {@code authenticateWith*} call are accumulated and can
+	 * be read either while the call is in progress (from another thread) or
+	 * after it returns.
+	 *
+	 * @return list of banner strings in the order received, never {@code null};
+	 *         empty if no banners have been received or authentication has not
+	 *         been attempted yet.
+	 * @see com.trilead.ssh2.auth.AuthenticationManager#getBanners()
+	 */
+	public List<String> getBanners()
+	{
+		// Intentionally NOT synchronized on this Connection. The other authentication
+		// entry points (authenticateWithNone, authenticateWithPassword, ...) hold the
+		// Connection monitor for the entire duration of the blocking auth call. A
+		// caller that wants to display banners live — e.g. Tailscale SSH's web-login
+		// URL, which arrives in a banner BEFORE USERAUTH_SUCCESS — must be able to
+		// read them from another thread while that call is still blocked.
+		AuthenticationManager local = am;
+		if (local == null)
+		{
+			return Collections.emptyList();
+		}
+		return local.getBanners();
 	}
 
 	/**
