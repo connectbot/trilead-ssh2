@@ -35,8 +35,6 @@ group = "org.connectbot"
 
 val gitHubUrl = "https://github.com/connectbot/trilead-ssh2"
 
-apply(from = "$rootDir/config/quality.gradle.kts")
-
 dependencies {
     implementation(libs.simplesocks)
     implementation(libs.tink) {
