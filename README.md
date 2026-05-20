@@ -1,9 +1,15 @@
-# ConnectBot's SSH library
+> [!WARNING]
+> **DEPRECATED**
+> This repository is no longer supported or maintained. The new ConnectBot SSH library can be found at [https://github.com/connectbot/sshlib](https://github.com/connectbot/sshlib).
+>
+> This former library was based on Trilead SSH-2. If you still need a maintained version of the Trilead library, please refer to [https://github.com/jenkinsci/trilead-ssh2](https://github.com/jenkinsci/trilead-ssh2).
+
+# Trilead SSH-2 library **(formerly used in ConnectBot)**
 [![Build Status](https://github.com/connectbot/sshlib/actions/workflows/ci.yml/badge.svg)](https://github.com/connectbot/sshlib/actions/workflows/ci.yml)
 [![Download](https://img.shields.io/maven-central/v/org.connectbot/sshlib)](https://search.maven.org/artifact/org.connectbot/sshlib)
 
-This is ConnectBot's SSH library. It started as a continuation of the Trilead SSH2 library,
-but has had several features added to it since then.
+This was ConnectBot's SSH library. It started as a continuation of the Trilead SSH2 library,
+but had several features added to it.
 
 This library retains its original [3-Clause BSD license](
 https://opensource.org/licenses/BSD-3-Clause).
@@ -38,7 +44,7 @@ https://opensource.org/licenses/BSD-3-Clause).
   * RSA  ([RFC 4253](https://tools.ietf.org/html/rfc4253#section-6.6))
 
 ##### Key exchange:
-  * `mlkem768x25519-sha256` ([draft-ietf-sshm-mlkem-hybrid-kex](https://datatracker.ietf.org/doc/draft-ietf-sshm-mlkem-hybrid-kex/) (depends on JEP-496 support)
+  * `mlkem768x25519-sha256` ([draft-ietf-sshm-mlkem-hybrid-kex](https://datatracker.ietf.org/doc/draft-ietf-sshm-mlkem-hybrid-kex/) (depends on JEP-496 support))
   * `ecdh-sha2-nistp521` ([RFC 5656](https://tools.ietf.org/html/rfc5656#section-4))
   * `ecdh-sha2-nistp384` ([RFC 5656](https://tools.ietf.org/html/rfc5656#section-4))
   * `ecdh-sha2-nistp256` ([RFC 5656](https://tools.ietf.org/html/rfc5656#section-4))
