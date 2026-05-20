@@ -33,7 +33,7 @@ repositories {
 
 group = "org.connectbot"
 
-val gitHubUrl = "https://github.com/connectbot/sshlib"
+val gitHubUrl = "https://github.com/connectbot/trilead-ssh2"
 
 apply(from = "$rootDir/config/quality.gradle.kts")
 
@@ -153,8 +153,8 @@ publishing {
             from(components["java"])
 
             pom {
-                name.set("sshlib")
-                description.set("The SSH library used by the ConnectBot app")
+                name.set("trilead-ssh2")
+                description.set("The SSH library formerly used by the ConnectBot app (DEPRECATED)")
                 url.set(gitHubUrl)
                 licenses {
                     license {
