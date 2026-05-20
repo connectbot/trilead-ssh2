@@ -6,7 +6,6 @@
 
 # Trilead SSH-2 library **(formerly used in ConnectBot)**
 [![Build Status](https://github.com/connectbot/trilead-ssh2/actions/workflows/ci.yml/badge.svg)](https://github.com/connectbot/trilead-ssh2/actions/workflows/ci.yml)
-[![Download](https://img.shields.io/maven-central/v/org.connectbot/sshlib)](https://search.maven.org/artifact/org.connectbot/sshlib)
 
 This was ConnectBot's SSH library. It started as a continuation of the Trilead SSH2 library,
 but had several features added to it.
