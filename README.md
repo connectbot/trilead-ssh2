@@ -1,6 +1,6 @@
 > [!WARNING]
 > **DEPRECATED**
-> This repository is no longer supported or maintained. The new ConnectBot SSH library can be found at [https://github.com/connectbot/sshlib](https://github.com/connectbot/sshlib).
+> This repository is no longer supported or maintained. The new ConnectBot SSH library can be found at [https://github.com/connectbot/cbssh](https://github.com/connectbot/cbssh).
 >
 > This former library was based on Trilead SSH-2. If you still need a maintained version of the Trilead library, please refer to [https://github.com/jenkinsci/trilead-ssh2](https://github.com/jenkinsci/trilead-ssh2).
 
