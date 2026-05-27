@@ -1,6 +1,6 @@
 [versions]
 # Plugins
-spotless = "8.5.1"
+spotless = "8.6.0"
 versions = "0.54.0"
 nexus-publish = "2.0.0"
 release = "3.1.0"
