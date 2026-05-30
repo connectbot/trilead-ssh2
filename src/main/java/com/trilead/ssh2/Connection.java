@@ -9,6 +9,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.security.KeyPair;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import com.trilead.ssh2.auth.AuthenticationManager;
@@ -107,6 +109,8 @@ public class Connection implements AutoCloseable
 	private ProxyData proxyData = null;
 
 	private Vector<ConnectionMonitor> connectionMonitors = new Vector<ConnectionMonitor>();
+	private final List<UserAuthBannerCallback> bannerCallbacks =
+			new ArrayList<UserAuthBannerCallback>();
 
 	/**
 	 * Prepares a fresh <code>Connection</code> object which can then be used
@@ -481,7 +485,7 @@ public class Connection implements AutoCloseable
 
 		if (am == null)
 		{
-			am = new AuthenticationManager(tm);
+			am = new AuthenticationManager(tm, bannerCallbacks);
 		}
 
 		if (cm == null)
@@ -519,6 +523,49 @@ public class Connection implements AutoCloseable
 
 		if (tm != null)
 			tm.setConnectionMonitors(connectionMonitors);
+	}
+
+	/**
+	 * Add a {@link UserAuthBannerCallback} to this connection. Can be invoked
+	 * before or after <code>connect()</code>, but callers interested in banners
+	 * that arrive before authentication starts should register the callback
+	 * before invoking <code>connect()</code>.
+	 *
+	 * @param cb
+	 *            callback that will receive server authentication banners.
+	 */
+	public synchronized void addUserAuthBanner(UserAuthBannerCallback cb)
+	{
+		if (cb == null)
+			throw new IllegalArgumentException("cb argument is null");
+
+		synchronized (bannerCallbacks)
+		{
+			bannerCallbacks.add(cb);
+		}
+
+		if (tm != null)
+			tm.setUserAuthBannerCallbacks(bannerCallbacks);
+	}
+
+	/**
+	 * Remove a {@link UserAuthBannerCallback} from this connection.
+	 *
+	 * @param cb
+	 *            callback to remove.
+	 */
+	public synchronized void removeUserAuthBanner(UserAuthBannerCallback cb)
+	{
+		if (cb == null)
+			throw new IllegalArgumentException("cb argument is null");
+
+		synchronized (bannerCallbacks)
+		{
+			bannerCallbacks.remove(cb);
+		}
+
+		if (tm != null)
+			tm.setUserAuthBannerCallbacks(bannerCallbacks);
 	}
 
 	/**
@@ -745,6 +792,7 @@ public class Connection implements AutoCloseable
 		tm = new TransportManager(hostname, port);
 
 		tm.setConnectionMonitors(connectionMonitors);
+		tm.setUserAuthBannerCallbacks(bannerCallbacks);
 
 		// Don't offer compression if not requested
 		if (!compression) {

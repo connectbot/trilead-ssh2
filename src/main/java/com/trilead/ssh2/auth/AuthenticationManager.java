@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.trilead.ssh2.InteractiveCallback;
+import com.trilead.ssh2.UserAuthBannerCallback;
 import com.trilead.ssh2.crypto.PEMDecoder;
 import com.trilead.ssh2.packets.PacketServiceAccept;
 import com.trilead.ssh2.packets.PacketServiceRequest;
@@ -50,6 +51,7 @@ import com.trilead.ssh2.transport.TransportManager;
 public class AuthenticationManager implements MessageHandler
 {
 	TransportManager tm;
+	List<UserAuthBannerCallback> bannerCallbacks;
 
 	List<byte[]> packets = new ArrayList<>();
 	boolean connectionClosed = false;
@@ -64,7 +66,13 @@ public class AuthenticationManager implements MessageHandler
 
 	public AuthenticationManager(TransportManager tm)
 	{
+		this(tm, new ArrayList<UserAuthBannerCallback>());
+	}
+
+	public AuthenticationManager(TransportManager tm, List<UserAuthBannerCallback> bannerCallbacks)
+	{
 		this.tm = tm;
+		this.bannerCallbacks = bannerCallbacks;
 	}
 
 	boolean methodPossible(String methName)
@@ -115,6 +123,29 @@ public class AuthenticationManager implements MessageHandler
 			PacketUserauthBanner sb = new PacketUserauthBanner(msg, 0, msg.length);
 
 			banner = sb.getBanner();
+			notifyBannerCallbacks(banner, sb.getLanguage());
+		}
+	}
+
+	private void notifyBannerCallbacks(String message, String language)
+	{
+		List<UserAuthBannerCallback> callbacks;
+
+		synchronized (bannerCallbacks)
+		{
+			callbacks = new ArrayList<UserAuthBannerCallback>(bannerCallbacks);
+		}
+
+		for (int i = 0; i < callbacks.size(); i++)
+		{
+			try
+			{
+				callbacks.get(i).receiveBanner(message, language);
+			}
+			catch (Exception ignore)
+			{
+				// Do not let application callback failures break authentication.
+			}
 		}
 	}
 
