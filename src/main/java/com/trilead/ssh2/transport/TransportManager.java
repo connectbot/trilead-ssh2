@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import com.trilead.ssh2.ConnectionInfo;
@@ -15,12 +17,14 @@ import com.trilead.ssh2.DHGexParameters;
 import com.trilead.ssh2.IpVersion;
 import com.trilead.ssh2.ProxyData;
 import com.trilead.ssh2.ServerHostKeyVerifier;
+import com.trilead.ssh2.UserAuthBannerCallback;
 import com.trilead.ssh2.compression.ICompressor;
 import com.trilead.ssh2.crypto.CryptoWishList;
 import com.trilead.ssh2.crypto.cipher.BlockCipher;
 import com.trilead.ssh2.crypto.digest.MAC;
 import com.trilead.ssh2.log.Logger;
 import com.trilead.ssh2.packets.PacketDisconnect;
+import com.trilead.ssh2.packets.PacketUserauthBanner;
 import com.trilead.ssh2.packets.Packets;
 import com.trilead.ssh2.packets.TypesReader;
 
@@ -138,6 +142,8 @@ public class TransportManager implements ITransportConnection
 	Thread receiveThread;
 
 	Vector connectionMonitors = new Vector();
+	List<UserAuthBannerCallback> bannerCallbacks =
+			new ArrayList<UserAuthBannerCallback>();
 	boolean monitorsWereInformed = false;
 
 	private volatile ExtensionInfo extensionInfo = ExtensionInfo.noExtInfoSeen();
@@ -536,6 +542,36 @@ public class TransportManager implements ITransportConnection
 		}
 	}
 
+	public void setUserAuthBannerCallbacks(List<UserAuthBannerCallback> callbacks)
+	{
+		synchronized (this)
+		{
+			bannerCallbacks = new ArrayList<UserAuthBannerCallback>(callbacks);
+		}
+	}
+
+	private void notifyUserAuthBannerCallbacks(String message, String language)
+	{
+		List<UserAuthBannerCallback> callbacks;
+
+		synchronized (this)
+		{
+			callbacks = new ArrayList<UserAuthBannerCallback>(bannerCallbacks);
+		}
+
+		for (int i = 0; i < callbacks.size(); i++)
+		{
+			try
+			{
+				callbacks.get(i).receiveBanner(message, language);
+			}
+			catch (Exception ignore)
+			{
+				// Do not let application callback failures close the transport.
+			}
+		}
+	}
+
 	public void sendMessage(byte[] msg) throws IOException
 	{
 		if (Thread.currentThread() == receiveThread)
@@ -697,6 +733,13 @@ public class TransportManager implements ITransportConnection
 					mh = he.mh;
 					break;
 				}
+			}
+
+			if ((type == Packets.SSH_MSG_USERAUTH_BANNER) && (mh == null))
+			{
+				PacketUserauthBanner banner = new PacketUserauthBanner(msg, 0, msglen);
+				notifyUserAuthBannerCallbacks(banner.getBanner(), banner.getLanguage());
+				continue;
 			}
 
 			if (mh == null)

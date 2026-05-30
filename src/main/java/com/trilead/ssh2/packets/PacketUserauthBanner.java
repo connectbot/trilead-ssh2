@@ -26,6 +26,11 @@ public class PacketUserauthBanner
 		return message;
 	}
 
+	public String getLanguage()
+	{
+		return language;
+	}
+
 	public PacketUserauthBanner(byte payload[], int off, int len) throws IOException
 	{
 		this.payload = new byte[len];
