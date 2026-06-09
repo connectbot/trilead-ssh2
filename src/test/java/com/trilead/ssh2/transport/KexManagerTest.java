@@ -18,6 +18,7 @@ import org.testcontainers.shaded.com.trilead.ssh2.packets.Packets;
 import java.io.IOException;
 import java.security.SecureRandom;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -74,6 +75,13 @@ public class KexManagerTest {
 		kexManager.initiateKEX(new CryptoWishList(), new DHGexParameters());
 		kexManager.initiateKEX(new CryptoWishList(), new DHGexParameters());
 		verify(tm, times(1)).sendKexMessage(any());
+	}
+
+	@Test
+	public void strictKexBeforeNegotiation_ReturnsFalse() throws Exception {
+		kexManager.initiateKEX(new CryptoWishList(), new DHGexParameters());
+
+		assertFalse(kexManager.isStrictKex());
 	}
 
 	@Test
