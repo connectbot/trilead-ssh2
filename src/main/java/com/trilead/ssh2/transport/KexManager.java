@@ -897,7 +897,15 @@ public class KexManager
 		throw new IllegalStateException("Unkown KEX method! (" + kxs.np.kex_algo + ")");
 	}
 
+	/**
+	 * Returns whether strict key exchange has been negotiated for the current exchange.
+	 *
+	 * @return {@code true} if strict key exchange has been negotiated, or {@code false}
+	 *         if negotiation has not completed or strict key exchange is not enabled
+	 */
 	public boolean isStrictKex() {
-		return kxs.np.isStrictKex;
+		KexState currentKex = kxs;
+		NegotiatedParameters negotiatedParameters = currentKex == null ? null : currentKex.np;
+		return negotiatedParameters != null && negotiatedParameters.isStrictKex;
 	}
 }
