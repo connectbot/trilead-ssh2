@@ -8,7 +8,7 @@ foojay-resolver = "1.0.0"
 
 # Dependencies
 simplesocks = "1.0.1"
-tink = "1.21.0"
+tink = "1.22.0"
 jbcrypt = "1.0.2"
 kyber = "2.0.1"
 logback = "1.5.34"
