@@ -16,7 +16,7 @@ commons-codec = "1.22.0"
 commons-io = "2.22.0"
 hamcrest = "3.0"
 jetbrains-annotations = "26.1.0"
-junit-jupiter = "6.1.0"
+junit-jupiter = "6.1.1"
 mockito = "5.23.0"
 testcontainers = "2.0.5"
 
