@@ -1,7 +1,7 @@
 [versions]
 # Plugins
 spotless = "8.6.0"
-versions = "0.54.0"
+versions = "0.58.0"
 nexus-publish = "2.0.0"
 release = "3.1.0"
 foojay-resolver = "1.0.0"
