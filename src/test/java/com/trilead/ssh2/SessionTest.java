@@ -43,15 +43,15 @@ public void setUp() throws IOException {
 	secureRandom = new SecureRandom();
 
 	// Setup mock behavior
-	when(mockChannelManager.openSessionChannel()).thenReturn(mockChannel);
+	when(mockChannelManager.openSessionChannel(Channel.CHANNEL_BUFFER_SIZE)).thenReturn(mockChannel);
 
-	session = new Session(mockChannelManager, secureRandom);
+	session = new Session(mockChannelManager, secureRandom, Channel.CHANNEL_BUFFER_SIZE);
 }
 
 @Test
 public void testSessionConstruction() throws IOException {
 	// Verify that session was created with channel manager
-	verify(mockChannelManager).openSessionChannel();
+	verify(mockChannelManager).openSessionChannel(Channel.CHANNEL_BUFFER_SIZE);
 	assertNotNull(session, "Session should be created successfully");
 }
 
@@ -332,25 +332,25 @@ public void testCloseIdempotent() throws IOException {
 @Test
 public void testSessionConstructionFailsWithNullChannelManager() {
 	assertThrows(NullPointerException.class, () ->
-		new Session(null, secureRandom));
+		new Session(null, secureRandom, Channel.CHANNEL_BUFFER_SIZE));
 }
 
 @Test
 public void testSessionConstructionWithNullSecureRandom() throws IOException {
-	when(mockChannelManager.openSessionChannel()).thenReturn(mockChannel);
+	when(mockChannelManager.openSessionChannel(Channel.CHANNEL_BUFFER_SIZE)).thenReturn(mockChannel);
 
 	// Constructor should accept null SecureRandom without throwing
-	new Session(mockChannelManager, null);
+	new Session(mockChannelManager, null, Channel.CHANNEL_BUFFER_SIZE);
 }
 
 @Test
 public void testSessionConstructionWithIOException() throws IOException {
 	ChannelManager failingChannelManager = mock(ChannelManager.class);
-	when(failingChannelManager.openSessionChannel())
+	when(failingChannelManager.openSessionChannel(Channel.CHANNEL_BUFFER_SIZE))
 		.thenThrow(new IOException("Mock failure"));
 
 	try {
-	new Session(failingChannelManager, secureRandom);
+	new Session(failingChannelManager, secureRandom, Channel.CHANNEL_BUFFER_SIZE);
 	fail("Should propagate IOException from channel manager");
 	} catch (IOException e) {
 	assertEquals(e.getMessage(), "Mock failure");

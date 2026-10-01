@@ -55,10 +55,10 @@ public class Session implements AutoCloseable
 
 	final SecureRandom rnd;
 
-	Session(ChannelManager cm, SecureRandom rnd) throws IOException
+	Session(ChannelManager cm, SecureRandom rnd, int windowSize) throws IOException
 	{
 		this.cm = cm;
-		this.cn = cm.openSessionChannel();
+		this.cn = cm.openSessionChannel(windowSize);
 		this.rnd = rnd;
 	}
 

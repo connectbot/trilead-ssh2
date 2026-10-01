@@ -663,7 +663,16 @@ public class ChannelManager implements MessageHandler
 
 	public Channel openSessionChannel() throws IOException
 	{
-		Channel c = new Channel(this);
+		return openSessionChannel(Channel.CHANNEL_BUFFER_SIZE);
+	}
+
+	/**
+	 * @param windowSize the receive window of the new channel, in bytes (see
+	 *            {@link Channel#Channel(ChannelManager, int)}).
+	 */
+	public Channel openSessionChannel(int windowSize) throws IOException
+	{
+		Channel c = new Channel(this, windowSize);
 
 		synchronized (c)
 		{
@@ -1149,10 +1158,9 @@ public class ChannelManager implements MessageHandler
 			if (c.state != Channel.STATE_OPEN)
 				return copylen;
 
-			if (c.localWindow < ((Channel.CHANNEL_BUFFER_SIZE + 1) / 2))
+			if (c.localWindow < ((c.bufferSize + 1) / 2))
 			{
-				int minFreeSpace = Math.min(Channel.CHANNEL_BUFFER_SIZE - c.stdoutWritepos, Channel.CHANNEL_BUFFER_SIZE
-						- c.stderrWritepos);
+				int minFreeSpace = Math.min(c.bufferSize - c.stdoutWritepos, c.bufferSize - c.stderrWritepos);
 
 				increment = minFreeSpace - c.localWindow;
 				c.localWindow = minFreeSpace;

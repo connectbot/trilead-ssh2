@@ -40,7 +40,8 @@ public class Channel
 	static final int STATE_OPEN = 2;
 	static final int STATE_CLOSED = 4;
 
-	static final int CHANNEL_BUFFER_SIZE = 30000;
+	/** Default receive window and buffer size of a channel, in bytes. */
+	public static final int CHANNEL_BUFFER_SIZE = 30000;
 
 	/*
 	 * To achieve correctness, the following rules have to be respected when
@@ -117,8 +118,11 @@ public class Channel
 	int localMaxPacketSize = -1;
 	int remoteMaxPacketSize = -1;
 
-	final byte[] stdoutBuffer = new byte[CHANNEL_BUFFER_SIZE];
-	final byte[] stderrBuffer = new byte[CHANNEL_BUFFER_SIZE];
+	/** This channel's receive window and the size of each of its two receive buffers. */
+	final int bufferSize;
+
+	final byte[] stdoutBuffer;
+	final byte[] stderrBuffer;
 
 	int stdoutReadpos = 0;
 	int stdoutWritepos = 0;
@@ -145,9 +149,26 @@ public class Channel
 
 	public Channel(ChannelManager cm)
 	{
+		this(cm, CHANNEL_BUFFER_SIZE);
+	}
+
+	/**
+	 * @param bufferSize the receive window to offer the peer, in bytes; the
+	 *            channel allocates two receive buffers (stdout and stderr) of
+	 *            this size.
+	 */
+	public Channel(ChannelManager cm, int bufferSize)
+	{
+		if (bufferSize <= 0)
+			throw new IllegalArgumentException("bufferSize must be positive: " + bufferSize);
+
 		this.cm = cm;
 
-		this.localWindow = CHANNEL_BUFFER_SIZE;
+		this.bufferSize = bufferSize;
+		this.stdoutBuffer = new byte[bufferSize];
+		this.stderrBuffer = new byte[bufferSize];
+
+		this.localWindow = bufferSize;
 		this.localMaxPacketSize = 35000 - 1024; // leave enough slack
 
 		this.stdinStream = new ChannelOutputStream(this);

@@ -15,6 +15,7 @@ import java.util.Vector;
 
 import com.trilead.ssh2.auth.AuthenticationManager;
 import com.trilead.ssh2.auth.SignatureProxy;
+import com.trilead.ssh2.channel.Channel;
 import com.trilead.ssh2.channel.ChannelManager;
 import com.trilead.ssh2.crypto.CryptoWishList;
 import com.trilead.ssh2.crypto.cipher.BlockCipherFactory;
@@ -1275,13 +1276,29 @@ public class Connection implements AutoCloseable
 	 */
 	public synchronized Session openSession() throws IOException
 	{
+		return openSession(Channel.CHANNEL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Open a new {@link Session} on this connection with a given receive
+	 * window. A larger window lets the server send more data before waiting
+	 * for the client to read it, which raises throughput on links with a
+	 * long round trip; the session allocates two receive buffers of this
+	 * size. {@link #openSession()} uses {@link Channel#CHANNEL_BUFFER_SIZE}.
+	 *
+	 * @param windowSize the receive window, in bytes.
+	 * @return A {@link Session} object.
+	 * @throws IOException on error
+	 */
+	public synchronized Session openSession(int windowSize) throws IOException
+	{
 		if (tm == null)
 			throw new IllegalStateException("Cannot open session, you need to establish a connection first.");
 
 		if (!authenticated)
 			throw new IllegalStateException("Cannot open session, connection is not authenticated.");
 
-		return new Session(cm, getOrCreateSecureRND());
+		return new Session(cm, getOrCreateSecureRND(), windowSize);
 	}
 
 	/**
