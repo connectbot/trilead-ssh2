@@ -3,7 +3,7 @@
 spotless = "8.6.0"
 versions = "0.62.0"
 nexus-publish = "2.0.0"
-release = "3.1.0"
+release = "3.2.0"
 foojay-resolver = "1.0.0"
 
 # Dependencies
