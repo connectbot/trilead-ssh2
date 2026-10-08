@@ -42,6 +42,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
@@ -512,6 +513,13 @@ public class AuthAgentForwardThread extends Thread implements IChannelWorkerThre
 				}
 			} else if (privKey instanceof DSAPrivateKey) {
 				response = DSASHA1Verify.get().generateSignature(challenge, privKey, new SecureRandom());
+			} else if (privKey instanceof ECPrivateKey) {
+				ECDSASHA2Verify verifier = ECDSASHA2Verify.getVerifierForKey((ECPrivateKey) privKey);
+				if (verifier == null) {
+					os.write(SSH_AGENT_FAILURE);
+					return;
+				}
+				response = verifier.generateSignature(challenge, privKey, new SecureRandom());
 			} else if (privKey instanceof Ed25519PrivateKey) {
 				response = Ed25519Verify.get().generateSignature(challenge, privKey, new SecureRandom());
 			} else {
