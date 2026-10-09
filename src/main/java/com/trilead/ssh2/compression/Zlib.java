@@ -91,30 +91,23 @@ public class Zlib implements ICompressor {
 
 		inflate.setInput(buffer, start, length[0]);
 
-		while (!inflate.needsInput()) {
+		// Inflate until the Inflater has nothing left to give. needsInput() alone is not enough: when an inflate()
+		// call fills the whole output buffer, the Inflater may have consumed all of the input while still holding
+		// inflated bytes, which would otherwise come out at the start of the next packet.
+		while (true) {
 			try {
 				int decompressed = inflate.inflate(inflate_tmpbuf, 0, DEFAULT_BUF_SIZE);
 
 				if (decompressed > 0) {
 					if (inflated_buf.length < inflated_end + decompressed) {
-						byte[] foo = new byte[inflated_end + decompressed];
+						byte[] foo = new byte[Math.max(inflated_end + decompressed, inflated_buf.length * 2)];
 						System.arraycopy(inflated_buf, 0, foo, 0, inflated_end);
 						inflated_buf = foo;
 					}
 					System.arraycopy(inflate_tmpbuf, 0, inflated_buf, inflated_end, decompressed);
 					inflated_end += decompressed;
-					length[0] = inflated_end;
-				} else if (decompressed == 0) {
-					if (inflated_end > buffer.length - start) {
-						byte[] foo = new byte[inflated_end + start];
-						System.arraycopy(buffer, 0, foo, 0, start);
-						System.arraycopy(inflated_buf, 0, foo, start, inflated_end);
-						buffer = foo;
-					} else {
-						System.arraycopy(inflated_buf, 0, buffer, start, inflated_end);
-					}
-					length[0] = inflated_end;
-					return buffer;
+				} else if (inflate.needsInput() || inflate.finished() || inflate.needsDictionary()) {
+					break;
 				}
 			} catch (java.util.zip.DataFormatException e) {
 				System.err.println("uncompress: inflate error: " + e.getMessage());
