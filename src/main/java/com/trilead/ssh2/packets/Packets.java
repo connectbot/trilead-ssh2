@@ -33,6 +33,7 @@ public class Packets
 	public static final int SSH_MSG_USERAUTH_FAILURE = 51;
 	public static final int SSH_MSG_USERAUTH_SUCCESS = 52;
 	public static final int SSH_MSG_USERAUTH_BANNER = 53;
+	public static final int SSH_MSG_USERAUTH_PK_OK = 60;
 	public static final int SSH_MSG_USERAUTH_INFO_REQUEST = 60;
 	public static final int SSH_MSG_USERAUTH_INFO_RESPONSE = 61;
 

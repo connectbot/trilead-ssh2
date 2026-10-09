@@ -2,7 +2,6 @@
 package com.trilead.ssh2.auth;
 
 import com.trilead.ssh2.crypto.PublicKeyUtils;
-import com.trilead.ssh2.crypto.keys.Ed25519PrivateKey;
 import com.trilead.ssh2.signature.RSASHA256Verify;
 import com.trilead.ssh2.signature.RSASHA512Verify;
 import java.io.IOException;
@@ -14,6 +13,7 @@ import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -32,6 +32,7 @@ import com.trilead.ssh2.packets.PacketUserauthRequestPassword;
 import com.trilead.ssh2.packets.PacketUserauthRequestPublicKey;
 import com.trilead.ssh2.packets.Packets;
 import com.trilead.ssh2.packets.TypesWriter;
+import com.trilead.ssh2.packets.TypesReader;
 import com.trilead.ssh2.signature.DSASHA1Verify;
 import com.trilead.ssh2.signature.ECDSASHA2Verify;
 import com.trilead.ssh2.signature.Ed25519Verify;
@@ -241,181 +242,19 @@ public class AuthenticationManager implements MessageHandler
 			if (!methodPossible("publickey"))
 				throw new IOException("Authentication method publickey not supported by the server at this stage.");
 
-			if (publicKey instanceof DSAPublicKey)
-			{
-				SSHSignature s = DSASHA1Verify.get();
-				byte[] pk_enc = s.encodePublicKey(publicKey);
-
-				byte[] msg = this.generatePublicKeyUserAuthenticationRequest(user, DSASHA1Verify.ID_SSH_DSS, pk_enc);
-
-				byte[] ds_enc;
-				if (signatureProxy != null)
-				{
-					ds_enc = signatureProxy.sign(msg, SignatureProxy.SHA1);
-				}
-				else
-				{
-					ds_enc = s.generateSignature(msg, privateKey, rnd);
-				}
-
-				PacketUserauthRequestPublicKey ua = new PacketUserauthRequestPublicKey("ssh-connection", user,
-						DSASHA1Verify.ID_SSH_DSS, pk_enc, ds_enc);
-				tm.sendMessage(ua.getPayload());
-			}
-			else if (publicKey instanceof RSAPublicKey)
-			{
-				byte[] pk_enc = RSASHA1Verify.get().encodePublicKey(publicKey);
-				String pk_algorithm;
-
-
-				// Servers support different hash algorithms for RSA keys
-				// https://tools.ietf.org/html/draft-ietf-curdle-rsa-sha2-12
-				Set<String> algsAccepted = tm.getExtensionInfo().getSignatureAlgorithmsAccepted();
-				final byte[] rsa_sig_enc;
-
-				if (algsAccepted.contains(RSASHA512Verify.get().getKeyFormat()))
-				{
-					SSHSignature s = RSASHA512Verify.get();
-					pk_algorithm = s.getKeyFormat();
-					byte[] msg = this.generatePublicKeyUserAuthenticationRequest(user, pk_algorithm, pk_enc);
-					if (signatureProxy != null)
-					{
-						rsa_sig_enc = signatureProxy.sign(msg, SignatureProxy.SHA512);
-					}
-					else
-					{
-						rsa_sig_enc = s.generateSignature(msg, privateKey, rnd);
-					}
-				}
-				else if (algsAccepted.contains(RSASHA256Verify.ID_RSA_SHA_2_256))
-				{
-					pk_algorithm = RSASHA256Verify.ID_RSA_SHA_2_256;
-					byte[] msg = this.generatePublicKeyUserAuthenticationRequest(user, pk_algorithm, pk_enc);
-
-					if (signatureProxy != null)
-					{
-						rsa_sig_enc = signatureProxy.sign(msg, SignatureProxy.SHA256);
-					}
-					else
-					{
-						rsa_sig_enc = RSASHA256Verify.get().generateSignature(msg, privateKey, rnd);
-					}
-				}
-				else
-				{
-					pk_algorithm = "ssh-rsa";
-					byte[] msg = this.generatePublicKeyUserAuthenticationRequest(user, pk_algorithm, pk_enc);
-					if (signatureProxy != null)
-					{
-						rsa_sig_enc = signatureProxy.sign(msg, SignatureProxy.SHA1);
-					}
-					else
-					{
-						// Server always accepts RSA with SHA1
-						rsa_sig_enc = RSASHA1Verify.get().generateSignature(msg, privateKey, rnd);
-					}
-				}
-
-				PacketUserauthRequestPublicKey ua = new PacketUserauthRequestPublicKey("ssh-connection", user,
-						pk_algorithm, pk_enc, rsa_sig_enc);
-
-				tm.sendMessage(ua.getPayload());
-			}
-			else if (publicKey instanceof ECPublicKey)
-			{
-				ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
-
-				ECDSASHA2Verify verifier = ECDSASHA2Verify.getVerifierForKey(ecPublicKey);
-
-				final String algo = verifier.getKeyFormat();
-
-				byte[] pk_enc = verifier.encodePublicKey(ecPublicKey);
-
-				byte[] msg = this.generatePublicKeyUserAuthenticationRequest(user, algo, pk_enc);
-
-				byte[] ec_sig_enc;
-				if (signatureProxy != null)
-				{
-					ec_sig_enc = signatureProxy.sign(msg, ECDSASHA2Verify.getDigestAlgorithmForParams(ecPublicKey));
-				}
-				else
-				{
-					ec_sig_enc = verifier.generateSignature(msg, privateKey, rnd);
-				}
-
-				PacketUserauthRequestPublicKey ua = new PacketUserauthRequestPublicKey("ssh-connection", user,
-						algo, pk_enc, ec_sig_enc);
-
-				tm.sendMessage(ua.getPayload());
-			}
-			else if (publicKey instanceof SkPublicKey)
-			{
-				// FIDO2 Security Key (SK) authentication
-				// This check must come before the Ed25519 check because
-				// SK Ed25519 keys match isEd25519Key() but require SK-specific encoding.
-				if (signatureProxy == null)
-				{
-					throw new IOException("SK key authentication requires a SignatureProxy for signing.");
-				}
-
-				SkPublicKey skPublicKey = (SkPublicKey) publicKey;
-				final String algo = skPublicKey.getSshKeyType();
-
-				// Get the encoded public key (includes key type, key data, and application)
-				byte[] pk_enc = skPublicKey.getEncoded();
-
-				byte[] msg = this.generatePublicKeyUserAuthenticationRequest(user, algo, pk_enc);
-
-				// Determine the hash algorithm based on key type
-				// sk-ssh-ed25519@openssh.com uses SHA512 (same as Ed25519)
-				// sk-ecdsa-sha2-nistp256@openssh.com uses SHA256
-				String hashAlgorithm;
-				if (algo.contains("ed25519"))
-				{
-					hashAlgorithm = SignatureProxy.SHA512;
-				}
-				else
-				{
-					hashAlgorithm = SignatureProxy.SHA256;
-				}
-
-				// The SignatureProxy.sign() for SK keys must return the complete
-				// signature blob including flags and counter, not just the raw signature
-				byte[] sk_sig_enc = signatureProxy.sign(msg, hashAlgorithm);
-
-				PacketUserauthRequestPublicKey ua = new PacketUserauthRequestPublicKey("ssh-connection", user,
-						algo, pk_enc, sk_sig_enc);
-
-				tm.sendMessage(ua.getPayload());
-			}
-			else if (PublicKeyUtils.isEd25519Key(publicKey))
-			{
-				final String algo = Ed25519Verify.ED25519_ID;
-
-				byte[] pk_enc = Ed25519Verify.get().encodePublicKey(publicKey);
-
-				byte[] msg = this.generatePublicKeyUserAuthenticationRequest(user, algo, pk_enc);
-
-				byte[] ed_sig_enc;
-				if (signatureProxy != null)
-				{
-					ed_sig_enc = signatureProxy.sign(msg, SignatureProxy.SHA512);
-				}
-				else
-				{
-					Ed25519PrivateKey pk = Ed25519Verify.convertPrivateKey(privateKey);
-					ed_sig_enc = Ed25519Verify.get().generateSignature(msg, pk, rnd);
-				}
-
-				PacketUserauthRequestPublicKey ua = new PacketUserauthRequestPublicKey("ssh-connection", user,
-						algo, pk_enc, ed_sig_enc);
-
-				tm.sendMessage(ua.getPayload());
-			}
+			PublicKeyOffer offer = publicKeyOffer(publicKey);
+			byte[] msg = generatePublicKeyUserAuthenticationRequest(user, offer.algorithm, offer.blob);
+			byte[] signature;
+			if (signatureProxy != null)
+				signature = signatureProxy.sign(msg, offer.hashAlgorithm);
+			else if (offer.verifier != null)
+				signature = offer.verifier.generateSignature(msg, privateKey, rnd);
 			else
-			{
-				throw new IOException("Unknown public key type.");
-			}
+				throw new IOException("SK key authentication requires a SignatureProxy for signing.");
+			if (signature == null)
+				throw new IOException("Signing returned no signature.");
+			tm.sendMessage(new PacketUserauthRequestPublicKey("ssh-connection", user,
+					offer.algorithm, offer.blob, signature).getPayload());
 
 			byte[] ar = getNextMessage();
 
@@ -426,6 +265,111 @@ public class AuthenticationManager implements MessageHandler
 			e.printStackTrace();
 			tm.close(e, false);
 			throw new IOException("Publickey authentication failed.", e);
+		}
+	}
+
+	public boolean probePublicKey(String user, PublicKey key) throws IOException
+	{
+		try
+		{
+			initialize(user);
+
+			if (!methodPossible("publickey"))
+				throw new IOException("Authentication method publickey not supported by the server at this stage.");
+
+			PublicKeyOffer offer = publicKeyOffer(key);
+			tm.sendMessage(new PacketUserauthRequestPublicKey("ssh-connection", user,
+					offer.algorithm, offer.blob, null).getPayload());
+
+			byte[] reply = getNextMessage();
+
+			if (reply[0] == Packets.SSH_MSG_USERAUTH_FAILURE)
+				return isAuthenticationSuccessful(reply);
+
+			TypesReader reader = new TypesReader(reply);
+			if (reader.readByte() != Packets.SSH_MSG_USERAUTH_PK_OK)
+				throw new IOException("Unexpected reply to public key offer.");
+
+			String algorithm = reader.readString();
+			byte[] blob = reader.readByteString();
+
+			if (reader.remain() != 0 || !offer.algorithm.equals(algorithm) || !Arrays.equals(offer.blob, blob))
+				throw new IOException("Public key acceptance does not match the offered key.");
+
+			isPartialSuccess = false;
+			return true;
+		}
+		catch (IOException e)
+		{
+			tm.close(e, false);
+			throw new IOException("Public key offer failed.", e);
+		}
+	}
+
+	private PublicKeyOffer publicKeyOffer(PublicKey key) throws IOException
+	{
+		SSHSignature verifier;
+		String hashAlgorithm;
+		if (key instanceof DSAPublicKey)
+		{
+			verifier = DSASHA1Verify.get();
+			hashAlgorithm = SignatureProxy.SHA1;
+		}
+		else if (key instanceof RSAPublicKey)
+		{
+			Set<String> algorithms = tm.getExtensionInfo().getSignatureAlgorithmsAccepted();
+			if (algorithms.contains(RSASHA512Verify.get().getKeyFormat()))
+			{
+				verifier = RSASHA512Verify.get();
+				hashAlgorithm = SignatureProxy.SHA512;
+			}
+			else if (algorithms.contains(RSASHA256Verify.ID_RSA_SHA_2_256))
+			{
+				verifier = RSASHA256Verify.get();
+				hashAlgorithm = SignatureProxy.SHA256;
+			}
+			else
+			{
+				verifier = RSASHA1Verify.get();
+				hashAlgorithm = SignatureProxy.SHA1;
+			}
+		}
+		else if (key instanceof ECPublicKey)
+		{
+			ECPublicKey ecKey = (ECPublicKey) key;
+			verifier = ECDSASHA2Verify.getVerifierForKey(ecKey);
+			hashAlgorithm = ECDSASHA2Verify.getDigestAlgorithmForParams(ecKey);
+		}
+		else if (key instanceof SkPublicKey)
+		{
+			SkPublicKey skKey = (SkPublicKey) key;
+			String algorithm = skKey.getSshKeyType();
+			return new PublicKeyOffer(algorithm, skKey.getEncoded(), null,
+					algorithm.contains("ed25519") ? SignatureProxy.SHA512 : SignatureProxy.SHA256);
+		}
+		else if (PublicKeyUtils.isEd25519Key(key))
+		{
+			verifier = Ed25519Verify.get();
+			hashAlgorithm = SignatureProxy.SHA512;
+		}
+		else
+			throw new IOException("Unknown public key type.");
+		return new PublicKeyOffer(verifier.getKeyFormat(), verifier.encodePublicKey(key), verifier, hashAlgorithm);
+	}
+
+	private static class PublicKeyOffer
+	{
+		final String algorithm;
+		final byte[] blob;
+		final SSHSignature verifier;
+		final String hashAlgorithm;
+
+		PublicKeyOffer(String algorithm, byte[] blob, SSHSignature verifier, String hashAlgorithm)
+		{
+			this.algorithm = algorithm;
+			this.blob = blob;
+			this.verifier = verifier;
+			this.hashAlgorithm = hashAlgorithm;
 		}
 	}
 

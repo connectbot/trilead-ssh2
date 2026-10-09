@@ -122,6 +122,21 @@ public class DropbearCompatibilityTest {
 	}
 
 	@Test
+	public void publicKeyProbeThenSign() throws Exception {
+		char[] chars = IOUtils.toCharArray(getClass().getResourceAsStream("crypto/ecdsa-nistp256-openssh2-private-key.txt"), "UTF-8");
+		java.security.KeyPair key = com.trilead.ssh2.crypto.PEMDecoder.decode(chars, "");
+		try (Connection connection = withServer(server)) {
+			connection.connect();
+			java.security.KeyPairGenerator generator = java.security.KeyPairGenerator.getInstance("EC");
+			generator.initialize(256);
+			assertThat(connection.probePublicKey(USERNAME, generator.generateKeyPair().getPublic()), is(false));
+			assertThat(connection.probePublicKey(USERNAME, key.getPublic()), is(true));
+			assertThat(connection.isAuthenticationComplete(), is(false));
+			assertThat(connection.authenticateWithPublicKey(USERNAME, key), is(true));
+		}
+	}
+
+	@Test
 	public void canConnectWithEd25519() throws Exception {
 		canConnectWithPubkey("ed25519-openssh2-private-key.txt");
 	}
