@@ -104,6 +104,59 @@ public class OpenSSHCompatibilityTest {
 	}
 
 	@Test
+	public void publicKeyProbeThenSign() throws Exception {
+		char[] keyChars = IOUtils.toCharArray(getClass().getResourceAsStream("crypto/ecdsa-nistp256-openssh2-private-key.txt"), "UTF-8");
+		java.security.KeyPair key = com.trilead.ssh2.crypto.PEMDecoder.decode(keyChars, "");
+		try (GenericContainer<?> server = getBaseContainer().withEnv(OPTIONS_ENV, "-o MaxAuthTries=1")) {
+			server.start();
+			try (Connection connection = withServer(server)) {
+				connection.connect(verifier);
+				assertThat(connection.probePublicKey(USERNAME, key.getPublic()), is(true));
+				assertThat(connection.isAuthenticationComplete(), is(false));
+				assertThat(connection.authenticateWithPublicKey(USERNAME, key), is(true));
+			}
+		}
+	}
+
+	@Test
+	public void rejectedOffersExhaustProbeBudgetThenAuthLimit() throws Exception {
+		java.security.KeyPairGenerator generator = java.security.KeyPairGenerator.getInstance("EC");
+		generator.initialize(256);
+		try (GenericContainer<?> server = getBaseContainer().withEnv(OPTIONS_ENV, "-o MaxAuthTries=2")) {
+			server.start();
+			try (Connection connection = withServer(server)) {
+				connection.connect(verifier);
+				// Current OpenSSH gives six probes a separate budget. The next
+				// rejection uses one auth attempt; the following one disconnects.
+				for (int i = 0; i < 7; i++) {
+					assertThat(connection.probePublicKey(USERNAME, generator.generateKeyPair().getPublic()), is(false));
+				}
+				org.junit.jupiter.api.Assertions.assertThrows(IOException.class,
+						() -> connection.probePublicKey(USERNAME, generator.generateKeyPair().getPublic()));
+			}
+		}
+	}
+
+	@Test
+	public void rejectedOffersThenAcceptedKeyWithinLimit() throws Exception {
+		char[] chars = IOUtils.toCharArray(getClass().getResourceAsStream("crypto/ecdsa-nistp256-openssh2-private-key.txt"), "UTF-8");
+		java.security.KeyPair key = com.trilead.ssh2.crypto.PEMDecoder.decode(chars, "");
+		java.security.KeyPairGenerator generator = java.security.KeyPairGenerator.getInstance("EC");
+		generator.initialize(256);
+		try (GenericContainer<?> server = getBaseContainer().withEnv(OPTIONS_ENV, "-o MaxAuthTries=1")) {
+			server.start();
+			try (Connection connection = withServer(server)) {
+				connection.connect(verifier);
+				for (int i = 0; i < 6; i++) {
+					assertThat(connection.probePublicKey(USERNAME, generator.generateKeyPair().getPublic()), is(false));
+				}
+				assertThat(connection.probePublicKey(USERNAME, key.getPublic()), is(true));
+				assertThat(connection.authenticateWithPublicKey(USERNAME, key), is(true));
+			}
+		}
+	}
+
+	@Test
 	public void testSocketAddress() throws IOException {
 		try (GenericContainer<?> server = getBaseContainer()) {
 			server.start();

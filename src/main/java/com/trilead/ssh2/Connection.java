@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -380,6 +381,25 @@ public class Connection implements AutoCloseable
 
 		return authenticated;
 	}
+
+	/**
+	 * Offer a public key without signing. Acceptance only indicates that the
+	 * server is willing to authenticate with this key; it does not authenticate
+	 * the connection. Rejected offers may count toward the server's attempt limit.
+	 *
+	 * @param user username to authenticate
+	 * @param key public key to offer
+	 * @return true for a matching SSH_MSG_USERAUTH_PK_OK, false for rejection
+	 * @throws IOException on transport or protocol error
+	 */
+	public synchronized boolean probePublicKey(String user, PublicKey key) throws IOException
+	{
+		if (key == null)
+			throw new IllegalArgumentException("Public key argument is null");
+		checkRequirements(user);
+		return am.probePublicKey(user, key);
+	}
+
 	/**
 	 * A convenience wrapper function which reads in a private key (PEM format,
 	 * either DSA, EC, or RSA) and then calls

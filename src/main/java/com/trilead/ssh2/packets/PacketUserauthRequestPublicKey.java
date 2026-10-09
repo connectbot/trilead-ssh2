@@ -54,10 +54,11 @@ public class PacketUserauthRequestPublicKey
 			tw.writeString(userName, "UTF-8");
 			tw.writeString(serviceName);
 			tw.writeString("publickey");
-			tw.writeBoolean(true);
+			tw.writeBoolean(sig != null);
 			tw.writeString(pkAlgoName);
 			tw.writeString(pk, 0, pk.length);
-			tw.writeString(sig, 0, sig.length);
+			if (sig != null)
+				tw.writeString(sig, 0, sig.length);
 			payload = tw.getBytes();
 		}
 		return payload;
