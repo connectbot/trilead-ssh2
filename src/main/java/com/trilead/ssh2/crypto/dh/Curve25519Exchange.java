@@ -51,11 +51,11 @@ public class Curve25519Exchange extends GenericDhExchange {
 			throw new IOException("Invalid name " + name);
 		}
 
-		clientPrivate = x25519Provider.generatePrivateKey();
 		try {
+			clientPrivate = x25519Provider.generatePrivateKey();
 			clientPublic = x25519Provider.publicFromPrivate(clientPrivate);
-		} catch (InvalidKeyException e) {
-			throw new IOException(e);
+		} catch (InvalidKeyException | RuntimeException e) {
+			throw new IOException("Curve25519 key generation failed", e);
 		}
 	}
 
@@ -86,8 +86,8 @@ public class Curve25519Exchange extends GenericDhExchange {
 				throw new IOException("Invalid key computed; all zeroes");
 			}
 			sharedSecret = new BigInteger(1, sharedSecretBytes);
-		} catch (InvalidKeyException e) {
-			throw new IOException(e);
+		} catch (InvalidKeyException | RuntimeException e) {
+			throw new IOException("Curve25519 key agreement failed", e);
 		}
 	}
 

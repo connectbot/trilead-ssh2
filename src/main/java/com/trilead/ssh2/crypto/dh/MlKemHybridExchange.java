@@ -84,7 +84,7 @@ public class MlKemHybridExchange extends GenericDhExchange {
 								+ ")");
 			}
 
-		} catch (InvalidKeyException e) {
+		} catch (InvalidKeyException | RuntimeException e) {
 			throw new IOException("Failed to generate key pair", e);
 		}
 	}
