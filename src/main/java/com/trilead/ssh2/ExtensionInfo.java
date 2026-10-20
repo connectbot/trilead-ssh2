@@ -9,7 +9,12 @@ import java.util.Set;
  * SSH extensions reported by the server
  *
  * https://tools.ietf.org/html/draft-ietf-curdle-ssh-ext-info-15
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
+@Deprecated
 public class ExtensionInfo
 {
 	private final Set<String> signatureAlgorithmsAccepted;

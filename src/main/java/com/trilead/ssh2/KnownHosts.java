@@ -54,8 +54,13 @@ import com.trilead.ssh2.transport.KexManager;
  *
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: KnownHosts.java,v 1.2 2008/04/01 12:38:09 cplattne Exp $
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
 
+@Deprecated
 public class KnownHosts extends ExtendedServerHostKeyVerifier
 {
 	public static final int HOSTKEY_IS_OK = 0;

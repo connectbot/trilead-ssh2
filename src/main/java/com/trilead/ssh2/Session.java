@@ -40,7 +40,12 @@ import com.trilead.ssh2.channel.X11ServerData;
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: Session.java,v 1.2 2008/03/03 07:01:36 cplattne Exp $
  * @see Connection#openSession()
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
+@Deprecated
 public class Session implements AutoCloseable
 {
 	ChannelManager cm;

@@ -10,7 +10,12 @@ import java.util.List;
  * {@link #removeServerHostKey(String, int, String, byte[])} will be called.
  *
  * @author Kenny Root
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
+@Deprecated
 public abstract class ExtendedServerHostKeyVerifier implements ServerHostKeyVerifier {
 	/**
 	 * Called during connection to determine which keys are known for this host.

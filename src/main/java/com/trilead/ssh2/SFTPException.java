@@ -12,8 +12,13 @@ import com.trilead.ssh2.sftp.ErrorCodes;
  *
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: SFTPException.java,v 1.1 2007/10/15 12:49:56 cplattne Exp $
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
 
+@Deprecated
 public class SFTPException extends IOException
 {
 	private static final long serialVersionUID = 578654644222421811L;

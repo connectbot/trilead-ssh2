@@ -8,8 +8,13 @@ package com.trilead.ssh2;
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: SFTPv3FileAttributes.java,v 1.2 2008/04/01 12:38:09 cplattne
  * Exp $
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
 
+@Deprecated
 public class SFTPv3FileAttributes {
 /* bitmask for the file type bitfields in POSIX permissions */
 private static final int S_IFMT = 0170000;

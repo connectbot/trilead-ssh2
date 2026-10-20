@@ -35,8 +35,13 @@ import java.io.UnsupportedEncodingException;
  * @version $Id: SCPClient.java,v 1.2 2008/04/01 12:38:09 cplattne Exp $
  * @see Connection
  * @see Session
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
 
+@Deprecated
 public class SCPClient
 {
 	Connection conn;

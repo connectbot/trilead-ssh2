@@ -8,7 +8,12 @@ package com.trilead.ssh2;
  *
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: DebugLogger.java,v 1.1 2008/03/03 07:01:36 cplattne Exp $
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
+@Deprecated
 public interface DebugLogger
 {
 

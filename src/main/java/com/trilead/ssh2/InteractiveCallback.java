@@ -10,8 +10,13 @@ package com.trilead.ssh2;
  *
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: InteractiveCallback.java,v 1.1 2007/10/15 12:49:56 cplattne Exp $
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
 
+@Deprecated
 public interface InteractiveCallback
 {
 	/**

@@ -152,7 +152,9 @@ publishing {
 
             pom {
                 name.set("trilead-ssh2")
-                description.set("The SSH library formerly used by the ConnectBot app (DEPRECATED)")
+                description.set(
+                    "DEPRECATED: This library is unsupported and receives no further updates, including security fixes. Migrate to cbssh (org.connectbot.sshlib:sshlib): https://github.com/kruton/cbssh.",
+                )
                 url.set(gitHubUrl)
                 licenses {
                     license {

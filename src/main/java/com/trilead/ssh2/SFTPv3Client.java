@@ -78,7 +78,12 @@ import com.trilead.ssh2.sftp.Packet;
  * @version $Id: SFTPv3Client.java,v 1.3 2008/04/01 12:38:09 cplattne Exp $
  * @see Connection
  * @see SFTPException
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
+@Deprecated
 public class SFTPv3Client
 {
 	final Connection conn;

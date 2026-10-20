@@ -8,7 +8,12 @@ import java.util.Map;
  *
  * @author Kenny Root
  * @version $Id$
+ *
+ * @deprecated This library is unsupported and receives no further updates, including security fixes.
+ * Migrate to <a href="https://github.com/kruton/cbssh">cbssh</a>
+ * ({@code org.connectbot.sshlib:sshlib}).
  */
+@Deprecated
 public interface AuthAgentCallback {
 
 	/**
