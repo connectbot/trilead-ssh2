@@ -6,6 +6,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -23,14 +24,36 @@ public class PlatformX25519Provider implements X25519Provider {
 
 	private final KeyPairGenerator keyPairGenerator;
 	private final KeyFactory keyFactory;
+	private final Provider provider;
 
 	public PlatformX25519Provider() {
+		this(defaultKeyPairGenerator());
+	}
+
+	PlatformX25519Provider(Provider provider) throws NoSuchAlgorithmException {
+		this(KeyPairGenerator.getInstance(ALGORITHM, provider));
+	}
+
+	private PlatformX25519Provider(KeyPairGenerator generator) {
+		keyPairGenerator = generator;
+		provider = generator.getProvider();
 		try {
-			keyPairGenerator = KeyPairGenerator.getInstance(ALGORITHM);
-			keyFactory = KeyFactory.getInstance(ALGORITHM);
+			keyFactory = KeyFactory.getInstance(ALGORITHM, provider);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("X25519 KeyFactory unavailable from " + provider.getName(), e);
+		}
+	}
+
+	private static KeyPairGenerator defaultKeyPairGenerator() {
+		try {
+			return KeyPairGenerator.getInstance(ALGORITHM);
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException("X25519 not available on this platform", e);
 		}
+	}
+
+	Provider getJcaProvider() {
+		return provider;
 	}
 
 	@Override
@@ -54,7 +77,7 @@ public class PlatformX25519Provider implements X25519Provider {
 	private void computePublicFromPrivate(byte[] privateKey, byte[] publicKey) throws InvalidKeyException {
 		try {
 			PrivateKey privKey = createPrivateKey(privateKey);
-			KeyAgreement ka = KeyAgreement.getInstance(ALGORITHM);
+			KeyAgreement ka = KeyAgreement.getInstance(ALGORITHM, provider);
 			ka.init(privKey);
 
 			PublicKey basePoint = createPublicKey(BASE_POINT);
@@ -72,7 +95,7 @@ public class PlatformX25519Provider implements X25519Provider {
 			PrivateKey privKey = createPrivateKey(privateKey);
 			PublicKey pubKey = createPublicKey(publicKey);
 
-			KeyAgreement keyAgreement = KeyAgreement.getInstance(ALGORITHM);
+			KeyAgreement keyAgreement = KeyAgreement.getInstance(ALGORITHM, provider);
 			keyAgreement.init(privKey);
 			keyAgreement.doPhase(pubKey, true);
 

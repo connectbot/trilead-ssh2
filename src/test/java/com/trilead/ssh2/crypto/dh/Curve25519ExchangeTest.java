@@ -5,11 +5,27 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigInteger;
+import java.security.Key;
+import java.security.KeyFactorySpi;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyPairGeneratorSpi;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.ProviderException;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Created by Kenny Root on 1/23/16.
@@ -115,5 +131,73 @@ public class Curve25519ExchangeTest {
 
 		assertNotNull(alice.sharedSecret);
 		assertEquals(alice.sharedSecret, bob.sharedSecret);
+	}
+
+	@Test
+	public void skipsProviderThatRejectsScalarExtraction() throws Exception {
+		Provider rejecting = new RejectingScalarProvider();
+		Provider working = KeyPairGenerator.getInstance("X25519").getProvider();
+		PlatformX25519Provider broken = new PlatformX25519Provider(rejecting);
+		// The same generator and factory lookups that Trilead previously used succeed.
+		assertInstanceOf(InvalidKeySpecException.class,
+				assertThrows(IllegalStateException.class, broken::generatePrivateKey).getCause());
+
+		PlatformX25519Provider selected = assertInstanceOf(PlatformX25519Provider.class,
+				X25519ProviderFactory.selectProvider(new Provider[] {rejecting, working}));
+		assertSame(working, selected.getJcaProvider());
+		assertArrayEquals(KNOWN_SHARED_SECRET, selected.computeSharedSecret(ALICE_PRIVATE, BOB_PUBLIC));
+	}
+
+	@Test
+	public void fallsBackToTinkWhenNoProviderPasses() throws Exception {
+		X25519Provider selected = X25519ProviderFactory.selectProvider(new Provider[] {new RejectingScalarProvider()});
+		assertInstanceOf(TinkX25519Provider.class, selected);
+		assertArrayEquals(KNOWN_SHARED_SECRET, selected.computeSharedSecret(ALICE_PRIVATE, BOB_PUBLIC));
+	}
+
+	private static final class RejectingScalarProvider extends Provider {
+		RejectingScalarProvider() {
+			super("RejectingScalar", 1.0, "Rejects X25519 scalar extraction");
+			put("KeyPairGenerator.X25519", DelegatingGenerator.class.getName());
+			put("KeyFactory.X25519", RejectingKeyFactory.class.getName());
+		}
+	}
+
+	public static final class DelegatingGenerator extends KeyPairGeneratorSpi {
+		@Override
+		public void initialize(int keysize, SecureRandom random) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public KeyPair generateKeyPair() {
+			try {
+				return KeyPairGenerator.getInstance("X25519").generateKeyPair();
+			} catch (NoSuchAlgorithmException e) {
+				throw new ProviderException(e);
+			}
+		}
+	}
+
+	public static final class RejectingKeyFactory extends KeyFactorySpi {
+		@Override
+		protected <T extends KeySpec> T engineGetKeySpec(Key key, Class<T> keySpec) throws InvalidKeySpecException {
+			throw new InvalidKeySpecException("Injected scalar extraction failure");
+		}
+
+		@Override
+		protected PublicKey engineGeneratePublic(KeySpec keySpec) throws InvalidKeySpecException {
+			throw new InvalidKeySpecException();
+		}
+
+		@Override
+		protected PrivateKey engineGeneratePrivate(KeySpec keySpec) throws InvalidKeySpecException {
+			throw new InvalidKeySpecException();
+		}
+
+		@Override
+		protected Key engineTranslateKey(Key key) {
+			throw new UnsupportedOperationException();
+		}
 	}
 }
