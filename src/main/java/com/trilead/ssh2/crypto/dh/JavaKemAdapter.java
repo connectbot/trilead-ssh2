@@ -18,15 +18,17 @@ public class JavaKemAdapter implements MlKemAdapter {
 	private static final int MLKEM768_PUBLIC_KEY_SIZE = 1184;
 	private static final int MLKEM768_CIPHERTEXT_SIZE = 1088;
 
-	private Object kemInstance;
+	private final Object kemInstance;
 
 	public JavaKemAdapter() throws IOException {
 		try {
+			// A provider can register key generation without exposing the KEM API.
+			KeyPairGenerator.getInstance("ML-KEM-768");
 			Class<?> kemClass = Class.forName("javax.crypto.KEM");
 			Method getInstance = kemClass.getMethod("getInstance", String.class);
 			kemInstance = getInstance.invoke(null, "ML-KEM");
-		} catch (Exception e) {
-			throw new IOException("Failed to initialize Java KEM API", e);
+		} catch (Exception | LinkageError e) {
+			throw new IOException("Failed to initialize Java ML-KEM-768", e);
 		}
 	}
 

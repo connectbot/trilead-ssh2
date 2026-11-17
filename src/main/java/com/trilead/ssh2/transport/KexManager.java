@@ -1,6 +1,8 @@
 
 package com.trilead.ssh2.transport;
 
+import asia.hombre.kyber.KyberKeyGenerator;
+
 import com.trilead.ssh2.signature.RSASHA256Verify;
 import com.trilead.ssh2.signature.RSASHA512Verify;
 import java.io.IOException;
@@ -27,6 +29,7 @@ import com.trilead.ssh2.crypto.cipher.BlockCipherFactory;
 import com.trilead.ssh2.crypto.dh.Curve25519Exchange;
 import com.trilead.ssh2.crypto.dh.DhGroupExchange;
 import com.trilead.ssh2.crypto.dh.GenericDhExchange;
+import com.trilead.ssh2.crypto.dh.JavaKemAdapter;
 import com.trilead.ssh2.crypto.dh.MlKemHybridExchange;
 import com.trilead.ssh2.crypto.digest.HMAC;
 import com.trilead.ssh2.crypto.digest.MAC;
@@ -71,39 +74,24 @@ public class KexManager
 		}
 		supportsEc = keyFact != null;
 
-		boolean mlkemSupported = false;
-		try {
-			java.security.KeyPairGenerator.getInstance("ML-KEM-768");
-
-			try {
-				Class<?> kemClass = Class.forName("javax.crypto.KEM");
-				java.lang.reflect.Method getInstance = kemClass.getMethod("getInstance", String.class);
-				getInstance.invoke(null, "ML-KEM");
-			} catch (ClassNotFoundException e) {
-				throw e;
-			}
-
-			mlkemSupported = true;
-			log.log(10, "ML-KEM-768 support detected (Java 23+, KEM API available)");
-		} catch (NoSuchAlgorithmException e) {
-			log.log(10, "ML-KEM-768 unavailable via Java KEM API, trying Kyber Kotlin fallback");
-			mlkemSupported = tryKyberKotlin();
-		} catch (ClassNotFoundException e) {
-			log.log(10, "ML-KEM-768 unavailable via Java KEM API (requires Java 23+), trying Kyber Kotlin fallback");
-			mlkemSupported = tryKyberKotlin();
-		} catch (Exception e) {
-			log.log(10, "ML-KEM-768 unavailable: " + e.getMessage());
-		}
-		supportsMlKem = mlkemSupported;
+		supportsMlKem = detectMlKemSupport();
 	}
 
-	private static boolean tryKyberKotlin() {
+	private static boolean detectMlKemSupport() {
 		try {
-			Class.forName("asia.hombre.kyber.KyberKeyGenerator");
-			log.log(10, "ML-KEM-768 support detected via Kyber Kotlin");
+			new JavaKemAdapter();
+			log.log(10, "ML-KEM-768 support detected via Java KEM API");
 			return true;
-		} catch (ClassNotFoundException e) {
-			log.log(10, "Kyber Kotlin not available, ML-KEM-768 disabled");
+		} catch (IOException e) {
+			log.log(10, "Java ML-KEM-768 unavailable, trying Kyber Kotlin: " + e.getCause());
+		}
+
+		try {
+			// Use a class reference so Android shrinkers can track the bundled dependency.
+			log.log(10, "ML-KEM-768 support detected via " + KyberKeyGenerator.class.getName());
+			return true;
+		} catch (LinkageError e) {
+			log.log(10, "Kyber Kotlin not available, ML-KEM-768 disabled: " + e);
 			return false;
 		}
 	}
