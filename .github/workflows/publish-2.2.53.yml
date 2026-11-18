@@ -1,0 +1,39 @@
+name: Publish signed Trilead 2.2.53
+
+on:
+  push:
+    branches: [publish/github-packages-2.2.53]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: zulu
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          cache-disabled: true
+          validate-wrappers: true
+      - name: Sign and publish to GitHub Packages
+        env:
+          ORG_GRADLE_PROJECT_githubPackagesUsername: ${{ github.actor }}
+          ORG_GRADLE_PROJECT_githubPackagesPassword: ${{ github.token }}
+          GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          GPG_KEYID: ${{ secrets.MAVEN_GPG_KEYID }}
+          GPG_PASSWORD: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          keyring=$(mktemp "$RUNNER_TEMP/trilead-keyring.XXXXXX")
+          trap 'rm -f "$keyring"' EXIT
+          printf '%s' "$GPG_PRIVATE_KEY" | base64 --decode > "$keyring"
+          ./gradlew publishMavenJavaPublicationToGithubPackagesRepository \
+            -PjdkVersion=17 -Psigning.keyId="$GPG_KEYID" \
+            -Psigning.secretKeyRingFile="$keyring" -Psigning.password="$GPG_PASSWORD"

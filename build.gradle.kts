@@ -146,6 +146,14 @@ tasks.named<DependencyUpdatesTask>("dependencyUpdates").configure {
 }
 
 publishing {
+    repositories {
+        maven {
+            name = "githubPackages"
+            url = uri("https://maven.pkg.github.com/connectbot/trilead-ssh2")
+            credentials(PasswordCredentials::class)
+        }
+    }
+
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
@@ -180,7 +188,8 @@ publishing {
 
 signing {
     setRequired({
-        gradle.taskGraph.hasTask("publish")
+        gradle.taskGraph.hasTask("publish") ||
+            gradle.taskGraph.hasTask(":publishMavenJavaPublicationToGithubPackagesRepository")
     })
     sign(publishing.publications["mavenJava"])
 }
